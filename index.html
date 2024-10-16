@@ -1,0 +1,144 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>GlobalRate - Currency Converter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin-top: 50px;
+        }
+        .converter-container {
+            background-color: white;
+            border-radius: 10px;
+            width: 300px;
+            margin: 50px auto;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px;
+            width: 100%;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #333;
+        }
+        footer {
+            margin-top: 50px;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <h1>GlobalRate - Currency Converter</h1>
+    <div class="converter-container">
+        <form id="converterForm">
+            <input type="number" id="amount" placeholder="Enter amount" required>
+            <select id="fromCurrency" required>
+                <option value="">Loading currencies...</option>
+            </select>
+            <select id="toCurrency" required>
+                <option value="">Loading currencies...</option>
+            </select>
+            <button type="submit">Convert</button>
+        </form>
+        <div id="result"></div>
+    </div>
+
+    <footer>
+        <p>&copy; 2024 GlobalRate. All rights reserved.</p>
+    </footer>
+
+    <script>
+        const fromCurrency = document.getElementById('fromCurrency');
+        const toCurrency = document.getElementById('toCurrency');
+        const form = document.getElementById('converterForm');
+        const result = document.getElementById('result');
+
+        const apiKey = '156e6a8409d029f3efcdb2137b19658a'; // Ensure to replace this key after regenerating
+
+        // Fetch the list of supported currencies and populate the dropdowns
+        function populateCurrencies() {
+            fetch(`http://api.currencylayer.com/list?access_key=${apiKey}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const currencies = data.currencies;
+                        let options = '';
+                        for (let code in currencies) {
+                            options += `<option value="${code}">${currencies[code]} (${code})</option>`;
+                        }
+                        fromCurrency.innerHTML = options;
+                        toCurrency.innerHTML = options;
+                    } else {
+                        console.error('Error loading currencies:', data.error.info);
+                        fromCurrency.innerHTML = '<option value="">Error loading currencies</option>';
+                        toCurrency.innerHTML = '<option value="">Error loading currencies</option>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching currency codes:', error);
+                    fromCurrency.innerHTML = '<option value="">Error loading currencies</option>';
+                    toCurrency.innerHTML = '<option value="">Error loading currencies</option>';
+                });
+        }
+
+        // Call the populateCurrencies function on page load
+        window.onload = populateCurrencies;
+
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const amount = document.getElementById('amount').value;
+            const fromCurrencyValue = fromCurrency.value;
+            const toCurrencyValue = toCurrency.value;
+
+            const url = `http://api.currencylayer.com/live?access_key=${apiKey}&currencies=${toCurrencyValue}&source=${fromCurrencyValue}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const rate = data.quotes[`${fromCurrencyValue}${toCurrencyValue}`];
+                        const convertedAmount = (amount * rate).toFixed(2);
+                        result.innerHTML = `<p>${amount} ${fromCurrencyValue} = ${convertedAmount} ${toCurrencyValue}</p>`;
+                    } else {
+                        result.innerHTML = `<p>Error: ${data.error.info}</p>`;
+                    }
+                })
+                .catch(error => {
+                    result.innerHTML = `<p>Error: Unable to retrieve data</p>`;
+                    console.error('Error:', error);
+                });
+        });
+    </script>
+</body>
+</html>
